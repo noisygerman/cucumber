@@ -26,28 +26,40 @@ public class RegularExpression implements Expression {
 
     @Override
     public List<Argument<?>> match(String text, Type... types) {
+        ParameterTypeRegistry.ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
         List<ParameterType<?>> parameterTypes = new ArrayList<>();
         int typeIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {
-            if (typeIndex < types.length) {
-                Type type = types[typeIndex++];
-                ParameterType<?> parameterType = parameterTypeRegistry.lookupByType(type, text);
-                if (parameterType == null) {
-                    throw new CucumberExpressionException(String.format("No parameter type for type %s", type.getTypeName()));
-                }
-                parameterTypes.add(parameterType);
-            } else {
-                String parameterTypeRegexp = groupBuilder.getSource();
+            // TODO: Sort out the priority of the hinted parameter type vs the regular expression parameter type
+            // IMO we should use the regular expression type if it exists. Otherwise we should
+            // use the type hint. If the regular expression exists we should also check if the type hint
+            // matches that of the regular expression and throw a clear error if it does not.
+            String parameterTypeRegexp = groupBuilder.getSource();
+            ParameterType<?> parameterType = null;
 
-                ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
-                if (parameterType == null) parameterType = new ParameterType<>(
+            if (parameterType == null) {
+                parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
+            }
+
+            if (parameterType == null && typeIndex < types.length) {
+                Type type = types[typeIndex];
+                parameterType = new ParameterType<>(
+                        "anonymous",
+                        parameterTypeRegexp,
+                        Object.class,
+                        (Transformer<Object>) arg -> objectMapper.convert(arg, type)
+                );
+            }
+            if (parameterType == null) {
+                parameterType = new ParameterType<>(
                         null,
                         parameterTypeRegexp,
                         String.class,
                         (Transformer<String>) arg -> arg
                 );
-                parameterTypes.add(parameterType);
             }
+            parameterTypes.add(parameterType);
+            typeIndex++;
         }
 
         return Argument.build(treeRegexp, parameterTypes, text);

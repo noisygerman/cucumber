@@ -15,10 +15,11 @@ import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.assertEquals;
 
 public class RegularExpressionTest {
+
+    private final ParameterTypeRegistry parameterTypeRegistry = new ParameterTypeRegistry(Locale.ENGLISH);
+
     @Test
     public void documentation_match_arguments() {
-        ParameterTypeRegistry parameterTypeRegistry = new ParameterTypeRegistry(Locale.ENGLISH);
-
         /// [capture-match-arguments]
         Pattern expr = Pattern.compile("I have (\\d+) cukes? in my (\\w+) now");
         Expression expression = new RegularExpression(expr, parameterTypeRegistry);
@@ -84,8 +85,32 @@ public class RegularExpressionTest {
         assertEquals(asList(22f, 33.5d), match);
     }
 
+    @Test
+    public void matches_int_as_float_using_anonymous_parameter_type() {
+        List<?> match = match(compile("a (.*) and a (.*)"), "a 22 and a 33.5", Float.class, Double.class);
+        assertEquals(asList(22f, 33.5d), match);
+    }
+
+    @Test
+    public void retains_all_content_captured_by_the_capture_group() {
+        List<?> match = match(compile("a quote ([\"a-z ]+)"), "a quote \" and quote \"", String.class);
+        assertEquals(asList("\" and quote \""), match);
+    }
+
+    @Test
+    public void uses_parameter_type_registry_when_parameter_type_is_defined() {
+        parameterTypeRegistry.defineParameterType(new ParameterType<>(
+                "test",
+                "[\"a-z ]+",
+                String.class,
+                (Transformer<String>) String::toUpperCase
+        ));
+        List<?> match = match(compile("a quote ([\"a-z ]+)"), "a quote \" and quote \"", String.class);
+        assertEquals(asList("\" AND QUOTE \""), match);
+    }
+
+
     private List<?> match(Pattern pattern, String text, Type... types) {
-        ParameterTypeRegistry parameterTypeRegistry = new ParameterTypeRegistry(Locale.ENGLISH);
         RegularExpression regularExpression = new RegularExpression(pattern, parameterTypeRegistry);
         List<Argument<?>> arguments = regularExpression.match(text, types);
         List<Object> values = new ArrayList<>();
