@@ -80,15 +80,33 @@ public class RegularExpressionTest {
     }
 
     @Test
-    public void matches_int_as_float_using_explicit_type() {
-        List<?> match = match(compile("a (\\d+) and a (.*)"), "a 22 and a 33.5", Float.class, Double.class);
-        assertEquals(asList(22f, 33.5d), match);
+    public void uses_float_type_hint_when_group_doesnt_match_known_param_type() {
+        List<?> match = match(compile("a (.*)"), "a 22", Float.class);
+        assertEquals(Float.class, match.get(0).getClass());
+        assertEquals(22f, (Float) match.get(0), 0.00001);
     }
 
     @Test
-    public void matches_int_as_float_using_anonymous_parameter_type() {
+    public void uses_double_type_hint_when_group_doesnt_match_known_param_type() {
+        List<?> match = match(compile("a (.*)"), "a 33.5", Double.class);
+        assertEquals(Double.class, match.get(0).getClass());
+        assertEquals(33.5d, (Double) match.get(0), 0.00001);
+    }
+
+    @Test
+    public void uses_two_type_hints() {
         List<?> match = match(compile("a (.*) and a (.*)"), "a 22 and a 33.5", Float.class, Double.class);
-        assertEquals(asList(22f, 33.5d), match);
+
+        assertEquals(Float.class, match.get(0).getClass());
+        assertEquals(22f, (Float) match.get(0), 0.00001);
+
+        assertEquals(Double.class, match.get(1).getClass());
+        assertEquals(33.5d, (Double) match.get(1), 0.00001);
+    }
+
+    @Test(expected = CucumberExpressionException.class)
+    public void throws_type_mismatch_when_group_identifies_param_type_incompatible_with_hint() {
+        match(compile("a (\\d+)"), "a 22", Float.class);
     }
 
     @Test

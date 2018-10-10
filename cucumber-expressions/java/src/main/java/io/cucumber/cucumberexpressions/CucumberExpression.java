@@ -124,7 +124,7 @@ public class CucumberExpression implements Expression {
     }
 
     @Override
-    public List<Argument<?>> match(String text, Type... types) {
+    public List<Argument<?>> match(String text, Type... typeHints) {
         return Argument.build(treeRegexp, parameterTypes, text);
     }
 

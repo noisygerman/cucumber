@@ -25,29 +25,39 @@ public class RegularExpression implements Expression {
     }
 
     @Override
-    public List<Argument<?>> match(String text, Type... types) {
+    public List<Argument<?>> match(String text, Type... typeHints) {
         ParameterTypeRegistry.ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
         List<ParameterType<?>> parameterTypes = new ArrayList<>();
-        int typeIndex = 0;
+        int typeHintIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {
-            // TODO: Sort out the priority of the hinted parameter type vs the regular expression parameter type
-            // IMO we should use the regular expression type if it exists. Otherwise we should
-            // use the type hint. If the regular expression exists we should also check if the type hint
-            // matches that of the regular expression and throw a clear error if it does not.
             String parameterTypeRegexp = groupBuilder.getSource();
-            ParameterType<?> parameterType = null;
+            ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
+            Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : null;
 
-            if (parameterType == null) {
-                parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
+            if (parameterType != null && typeHint != null) {
+                // Use hint for validation only
+
+                // TODO: Handle types that are not classes - needs tests
+                Class<?> paramClass = (Class) parameterType.getType();
+                Class<?> hintClass = (Class) typeHint;
+                if (!hintClass.isAssignableFrom(paramClass)) {
+                    throw new CucumberExpressionException(String.format(
+                            // TODO: Tell users what to do if they attempt to convert \d+ into Float.
+                            "Capture group with %s transforms to %s, which is incompatible with %s. " +
+                                    "Try changing the capture group to something that doesn't match an existing parameter type.",
+                            parameterTypeRegexp,
+                            paramClass.getTypeName(),
+                            hintClass.getTypeName())
+                    );
+                }
             }
 
-            if (parameterType == null && typeIndex < types.length) {
-                Type type = types[typeIndex];
+            if (parameterType == null && typeHint != null) {
                 parameterType = new ParameterType<>(
                         "anonymous",
                         parameterTypeRegexp,
                         Object.class,
-                        (Transformer<Object>) arg -> objectMapper.convert(arg, type)
+                        (Transformer<Object>) arg -> objectMapper.convert(arg, typeHint)
                 );
             }
             if (parameterType == null) {
@@ -59,7 +69,6 @@ public class RegularExpression implements Expression {
                 );
             }
             parameterTypes.add(parameterType);
-            typeIndex++;
         }
 
         return Argument.build(treeRegexp, parameterTypes, text);
