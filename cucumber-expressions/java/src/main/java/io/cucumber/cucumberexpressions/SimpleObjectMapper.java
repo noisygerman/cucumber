@@ -34,7 +34,7 @@ final class SimpleObjectMapper implements ObjectMapper {
             return null;
         }
 
-        if (String.class.equals(toValueType)) {
+        if (String.class.equals(toValueType) || Object.class.equals(toValueType)) {
             return fromValue;
         }
 

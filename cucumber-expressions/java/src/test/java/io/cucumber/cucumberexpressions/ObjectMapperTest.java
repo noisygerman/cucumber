@@ -43,6 +43,13 @@ public class ObjectMapperTest {
                 objectMapper.convert("Barbara Liskov", String.class));
     }
 
+
+    @Test
+    public void should_convert_to_object() {
+        assertEquals("Barbara Liskov",
+                objectMapper.convert("Barbara Liskov", Object.class));
+    }
+
     @Test
     public void should_convert_to_big_integer() {
         assertEquals(new BigInteger("10000008"),
