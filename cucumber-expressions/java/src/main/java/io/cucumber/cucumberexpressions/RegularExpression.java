@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static io.cucumber.cucumberexpressions.ParameterType.anonymous;
+
 public class RegularExpression implements Expression {
     private final Pattern expressionRegexp;
     private final ParameterTypeRegistry parameterTypeRegistry;
@@ -26,15 +28,16 @@ public class RegularExpression implements Expression {
 
     @Override
     public List<Argument<?>> match(String text, Type... typeHints) {
-        ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
-        List<ParameterType<?>> parameterTypes = new ArrayList<>();
+        final ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
+        final List<ParameterType<?>> parameterTypes = new ArrayList<>();
         int typeHintIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {
-            String parameterTypeRegexp = groupBuilder.getSource();
-            ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
-            Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : null;
+            final String parameterTypeRegexp = groupBuilder.getSource();
+            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : Object.class;
 
-            if (parameterType != null && typeHint != null) {
+            ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
+
+            if (parameterType != null && !parameterType.isAnonymous()) {
                 // Use hint for validation only
 
                 // TODO: Handle types that are not classes - needs tests
@@ -52,24 +55,19 @@ public class RegularExpression implements Expression {
                 }
             }
 
-            if (parameterType == null && typeHint != null) {
-                parameterType = new ParameterType<>(
-                        "anonymous",
-                        parameterTypeRegexp,
-                        Object.class,
-                        (Transformer<Object>) arg -> objectMapper.convert(arg, typeHint)
-                );
-            }
             if (parameterType == null) {
-                parameterType = new ParameterType<>(
-                        null,
-                        parameterTypeRegexp,
-                        String.class,
-                        (Transformer<String>) arg -> arg
-                );
+                parameterType = anonymous(parameterTypeRegexp);
             }
+
+            // Either from the one created above or found by lookupByRegexp
+            if (parameterType.isAnonymous()) {
+                Transformer<Object> transformer = new ObjectMapperTransformer(objectMapper, typeHint);
+                parameterType = parameterType.deAnonymize(transformer);
+            }
+
             parameterTypes.add(parameterType);
         }
+
 
         return Argument.build(treeRegexp, parameterTypes, text);
     }

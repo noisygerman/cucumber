@@ -47,6 +47,15 @@ public final class ParameterType<T> implements Comparable<ParameterType<?>> {
         );
     }
 
+    static ParameterType<Object> anonymous(String regexp) {
+        return new ParameterType<>("", singletonList(regexp), Object.class, new CaptureGroupTransformer<Object>() {
+            @Override
+            public Object transform(String[] args) throws Throwable {
+                throw new UnsupportedOperationException("Anonymous transform must be deanonymized before use");
+            }
+        }, false, false);
+    }
+
     public ParameterType(String name, List<String> regexps, Type type, CaptureGroupTransformer<T> transformer, boolean useForSnippets, boolean preferForRegexpMatch) {
         if (regexps == null) throw new NullPointerException("regexps cannot be null");
         if (type == null) throw new NullPointerException("type cannot be null");
@@ -142,6 +151,14 @@ public final class ParameterType<T> implements Comparable<ParameterType<?>> {
      */
     public boolean useForSnippets() {
         return useForSnippets;
+    }
+
+    boolean isAnonymous() {
+        return name != null && name.isEmpty();
+    }
+
+    ParameterType<Object> deAnonymize(Transformer<Object> transformer) {
+        return new ParameterType<>("anonymous", regexps, type, transformer, useForSnippets, preferForRegexpMatch);
     }
 
     T transform(List<String> groupValues) {

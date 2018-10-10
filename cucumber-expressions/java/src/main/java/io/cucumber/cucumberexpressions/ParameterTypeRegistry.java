@@ -22,6 +22,7 @@ public class ParameterTypeRegistry {
     private static final List<String> FLOAT_REGEXPS = singletonList(Pattern.compile("-?\\d*[.,]\\d+").pattern());
     private static final List<String> WORD_REGEXPS = singletonList(Pattern.compile("[^\\s]+").pattern());
     private static final List<String> STRING_REGEXPS = singletonList(Pattern.compile("\"([^\"\\\\]*(\\\\.[^\"\\\\]*)*)\"|'([^'\\\\]*(\\\\.[^'\\\\]*)*)'").pattern());
+    private static final String ANONYMOUS_REGEX = Pattern.compile(".*").pattern();
     private final Map<String, ParameterType<?>> parameterTypeByName = new HashMap<>();
     private final Map<Type, SortedSet<ParameterType<?>>> parameterTypesByType = new HashMap<>();
     private final Map<String, SortedSet<ParameterType<?>>> parameterTypesByRegexp = new HashMap<>();
@@ -97,12 +98,18 @@ public class ParameterTypeRegistry {
                         String.class);
             }
         }, true, false));
+
+        defineParameterType(ParameterType.anonymous(ANONYMOUS_REGEX));
     }
 
     public void defineParameterType(ParameterType<?> parameterType) {
         if (parameterType.getName() != null) {
-            if (parameterTypeByName.containsKey(parameterType.getName()))
+            if (parameterTypeByName.containsKey(parameterType.getName())) {
+                if(parameterType.getName().isEmpty()){
+                    throw new DuplicateTypeNameException("The anonymous parameter type has already been defined");
+                }
                 throw new DuplicateTypeNameException(String.format("There is already a parameter type with name %s", parameterType.getName()));
+            }
             parameterTypeByName.put(parameterType.getName(), parameterType);
         }
 

@@ -88,13 +88,13 @@ public class RegularExpressionTest {
 
     @Test
     public void uses_double_type_hint_when_group_doesnt_match_known_param_type() {
-        List<?> match = match(compile("a (.*)"), "a 33.5", Double.class);
+        List<?> match = match(compile("a (\\d\\d.\\d)"), "a 33.5", Double.class);
         assertEquals(Double.class, match.get(0).getClass());
         assertEquals(33.5d, (Double) match.get(0), 0.00001);
     }
 
     @Test
-    public void uses_two_type_hints() {
+    public void uses_two_type_hints_to_resolve_anonymous_parameter_type() {
         List<?> match = match(compile("a (.*) and a (.*)"), "a 22 and a 33.5", Float.class, Double.class);
 
         assertEquals(Float.class, match.get(0).getClass());
@@ -127,6 +127,15 @@ public class RegularExpressionTest {
         assertEquals(asList("\" AND QUOTE \""), match);
     }
 
+    @Test
+    public void matches_anonymous_parameter_type_with_hint() {
+        assertEquals(singletonList(0.22f), match(compile("(.*)"), "0.22", Float.class));
+    }
+
+    @Test
+    public void matches_anonymous_parameter_type() {
+        assertEquals(singletonList("0.22"), match(compile("(.*)"), "0.22"));
+    }
 
     private List<?> match(Pattern pattern, String text, Type... types) {
         RegularExpression regularExpression = new RegularExpression(pattern, parameterTypeRegistry);
