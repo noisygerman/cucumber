@@ -26,7 +26,7 @@ public class RegularExpression implements Expression {
 
     @Override
     public List<Argument<?>> match(String text, Type... typeHints) {
-        ParameterTypeRegistry.ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
+        ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
         List<ParameterType<?>> parameterTypes = new ArrayList<>();
         int typeHintIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {

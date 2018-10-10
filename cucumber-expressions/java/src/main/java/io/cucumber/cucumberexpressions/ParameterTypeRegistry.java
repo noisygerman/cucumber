@@ -3,7 +3,6 @@ package io.cucumber.cucumberexpressions;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -28,145 +27,74 @@ public class ParameterTypeRegistry {
     private final Map<String, SortedSet<ParameterType<?>>> parameterTypesByRegexp = new HashMap<>();
     private final ObjectMapper objectMapper;
 
-    public interface ObjectMapper {
-        <T> T convert(String fromValue, Class<T> toValueType);
-
-        Object convert(String fromValue, Type toValueType);
-    }
-
-
-    private static final class SimpleObjectMapper implements ObjectMapper {
-
-        private final NumberParser numberParser;
-
-        SimpleObjectMapper(Locale locale) {
-            NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
-            this.numberParser = new NumberParser(numberFormat);
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public <T> T convert(String fromValue, Class<T> toValueType) {
-            if (fromValue == null) {
-                return null;
-            }
-
-            if (String.class.equals(toValueType)) {
-                return (T) fromValue;
-            }
-
-            if (BigInteger.class.equals(toValueType)) {
-                return (T) new BigInteger(fromValue);
-            }
-
-            if (BigDecimal.class.equals(toValueType)) {
-                return (T) new BigDecimal(fromValue);
-            }
-
-            if (Byte.class.equals(toValueType)) {
-                return (T) Byte.decode(fromValue);
-            }
-
-            if (Short.class.equals(toValueType)) {
-                return (T) Short.decode(fromValue);
-            }
-
-            if (Integer.class.equals(toValueType)) {
-                return (T) Integer.decode(fromValue);
-            }
-
-            if (Long.class.equals(toValueType)) {
-                return (T) Long.decode(fromValue);
-            }
-
-            if (Float.class.equals(toValueType)) {
-                return (T) (Float) numberParser.parseFloat(fromValue);
-            }
-
-            if (Double.class.equals(toValueType)) {
-                return (T) (Double) numberParser.parseDouble(fromValue);
-            }
-
-            //TODO: This can happen with either the anonymous parameter type or with regular expressions
-            // Resolution either:
-            // 1. Register a parameter type for type.
-            // 2. Register a different default object mapper.
-            throw new IllegalArgumentException("Unsupported type");
-        }
-
-        @Override
-        public Object convert(String fromValue, Type toValueType) {
-            if (toValueType instanceof Class) {
-                return convert(fromValue, (Class<?>) toValueType);
-            }
-
-            // TODO: Inline the method above here. Remove old method.
-            // Above implementation was easier to write/copy/paste.
-            throw new IllegalArgumentException();
-        }
-    }
-
     public ParameterTypeRegistry(Locale locale) {
-        this.objectMapper = new SimpleObjectMapper(locale);
+        this(new SimpleObjectMapper(locale));
+    }
+
+    public ParameterTypeRegistry(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
 
         defineParameterType(new ParameterType<>("biginteger", INTEGER_REGEXPS, BigInteger.class, new Transformer<BigInteger>() {
             @Override
             public BigInteger transform(String arg) {
-                return objectMapper.convert(arg, BigInteger.class);
+                return (BigInteger) objectMapper.convert(arg, BigInteger.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("bigdecimal", FLOAT_REGEXPS, BigDecimal.class, new Transformer<BigDecimal>() {
             @Override
             public BigDecimal transform(String arg) {
-                return objectMapper.convert(arg, BigDecimal.class);
+                return (BigDecimal) objectMapper.convert(arg, BigDecimal.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("byte", INTEGER_REGEXPS, Byte.class, new Transformer<Byte>() {
             @Override
             public Byte transform(String arg) {
-                return objectMapper.convert(arg, Byte.class);
+                return (Byte) objectMapper.convert(arg, Byte.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("short", INTEGER_REGEXPS, Short.class, new Transformer<Short>() {
             @Override
             public Short transform(String arg) {
-                return objectMapper.convert(arg, Short.class);
+                return (Short) objectMapper.convert(arg, Short.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("int", INTEGER_REGEXPS, Integer.class, new Transformer<Integer>() {
             @Override
             public Integer transform(String arg) {
-                return objectMapper.convert(arg, Integer.class);
+                return (Integer) objectMapper.convert(arg, Integer.class);
             }
         }, true, true));
         defineParameterType(new ParameterType<>("long", INTEGER_REGEXPS, Long.class, new Transformer<Long>() {
             @Override
             public Long transform(String arg) {
-                return objectMapper.convert(arg, Long.class);
+                return (Long) objectMapper.convert(arg, Long.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("float", FLOAT_REGEXPS, Float.class, new Transformer<Float>() {
             @Override
             public Float transform(String arg) {
-                return objectMapper.convert(arg, Float.class);
+                return (Float) objectMapper.convert(arg, Float.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("double", FLOAT_REGEXPS, Double.class, new Transformer<Double>() {
             @Override
             public Double transform(String arg) {
-                return objectMapper.convert(arg, Double.class);
+                return (Double) objectMapper.convert(arg, Double.class);
             }
         }, true, true));
         defineParameterType(new ParameterType<>("word", WORD_REGEXPS, String.class, new Transformer<String>() {
             @Override
             public String transform(String arg) {
-                return objectMapper.convert(arg, String.class);
+                return (String) objectMapper.convert(arg, String.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("string", STRING_REGEXPS, String.class, new Transformer<String>() {
             @Override
             public String transform(String arg) {
-                return arg == null ? null : objectMapper.convert(arg.replaceAll("\\\\\"", "\"").replaceAll("\\\\'", "'"), String.class);
+                return arg == null ? null : (String) objectMapper.convert(arg
+                                .replaceAll("\\\\\"", "\"")
+                                .replaceAll("\\\\'", "'"),
+                        String.class);
             }
         }, true, false));
     }
