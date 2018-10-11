@@ -28,12 +28,12 @@ public class RegularExpression implements Expression {
 
     @Override
     public List<Argument<?>> match(String text, Type... typeHints) {
-        final ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
+        final DefaultTransformer defaultTransformer = parameterTypeRegistry.getDefaultTransformer();
         final List<ParameterType<?>> parameterTypes = new ArrayList<>();
         int typeHintIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {
             final String parameterTypeRegexp = groupBuilder.getSource();
-            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : Object.class;
+            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : null;
 
             ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
 
@@ -43,24 +43,26 @@ public class RegularExpression implements Expression {
 
             // Either from createAnonymousParameterType or lookupByRegexp
             if (parameterType.isAnonymous()) {
-                Type type = Object.class.equals(typeHint) ? String.class : typeHint;
-                Transformer<Object> transformer = new ObjectMapperTransformer(objectMapper, type);
+                Type type = typeHint == null ? String.class : typeHint;
+                Transformer<Object> transformer = new ObjectMapperTransformer(defaultTransformer, type);
                 parameterType = parameterType.deAnonymize(type, transformer);
             }
 
             // Use hint for validation only
             // TODO: Handle types that are not classes - needs tests
-            Class<?> paramClass = (Class) parameterType.getType();
-            Class<?> hintClass = (Class) typeHint;
-            if (!hintClass.isAssignableFrom(paramClass)) {
-                throw new CucumberExpressionException(String.format(
-                        // TODO: Tell users what to do if they attempt to convert \d+ into Float.
-                        "Capture group with %s transforms to %s, which is incompatible with %s. " +
-                                "Try changing the capture group to something that doesn't match an existing parameter type.",
-                        parameterTypeRegexp,
-                        paramClass.getName(),
-                        hintClass.getName())
-                );
+            if (typeHint != null) {
+                Class<?> paramClass = (Class) parameterType.getType();
+                Class<?> hintClass = (Class) typeHint;
+                if (!hintClass.isAssignableFrom(paramClass)) {
+                    throw new CucumberExpressionException(String.format(
+                            // TODO: Tell users what to do if they attempt to transform \d+ into Float.
+                            "Capture group with %s transforms to %s, which is incompatible with %s. " +
+                                    "Try changing the capture group to something that doesn't match an existing parameter type.",
+                            parameterTypeRegexp,
+                            paramClass.getName(),
+                            hintClass.getName())
+                    );
+                }
             }
 
             parameterTypes.add(parameterType);

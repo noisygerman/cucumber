@@ -1,6 +1,5 @@
 package io.cucumber.cucumberexpressions;
 
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -26,73 +25,73 @@ public class ParameterTypeRegistry {
     private static final String ANONYMOUS_REGEX = Pattern.compile(".*").pattern();
     private final Map<String, ParameterType<?>> parameterTypeByName = new HashMap<>();
     private final Map<String, SortedSet<ParameterType<?>>> parameterTypesByRegexp = new HashMap<>();
-    private final ObjectMapper objectMapper;
+    private final DefaultTransformer defaultTransformer;
 
     public ParameterTypeRegistry(Locale locale) {
-        this(new SimpleObjectMapper(locale));
+        this(new SimpleDefaultTransformer(locale));
     }
 
-    public ParameterTypeRegistry(final ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public ParameterTypeRegistry(final DefaultTransformer defaultTransformer) {
+        this.defaultTransformer = defaultTransformer;
 
         defineParameterType(new ParameterType<>("biginteger", INTEGER_REGEXPS, BigInteger.class, new Transformer<BigInteger>() {
             @Override
             public BigInteger transform(String arg) {
-                return (BigInteger) objectMapper.convert(arg, BigInteger.class);
+                return (BigInteger) defaultTransformer.transform(arg, BigInteger.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("bigdecimal", FLOAT_REGEXPS, BigDecimal.class, new Transformer<BigDecimal>() {
             @Override
             public BigDecimal transform(String arg) {
-                return (BigDecimal) objectMapper.convert(arg, BigDecimal.class);
+                return (BigDecimal) defaultTransformer.transform(arg, BigDecimal.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("byte", INTEGER_REGEXPS, Byte.class, new Transformer<Byte>() {
             @Override
             public Byte transform(String arg) {
-                return (Byte) objectMapper.convert(arg, Byte.class);
+                return (Byte) defaultTransformer.transform(arg, Byte.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("short", INTEGER_REGEXPS, Short.class, new Transformer<Short>() {
             @Override
             public Short transform(String arg) {
-                return (Short) objectMapper.convert(arg, Short.class);
+                return (Short) defaultTransformer.transform(arg, Short.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("int", INTEGER_REGEXPS, Integer.class, new Transformer<Integer>() {
             @Override
             public Integer transform(String arg) {
-                return (Integer) objectMapper.convert(arg, Integer.class);
+                return (Integer) defaultTransformer.transform(arg, Integer.class);
             }
         }, true, true));
         defineParameterType(new ParameterType<>("long", INTEGER_REGEXPS, Long.class, new Transformer<Long>() {
             @Override
             public Long transform(String arg) {
-                return (Long) objectMapper.convert(arg, Long.class);
+                return (Long) defaultTransformer.transform(arg, Long.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("float", FLOAT_REGEXPS, Float.class, new Transformer<Float>() {
             @Override
             public Float transform(String arg) {
-                return (Float) objectMapper.convert(arg, Float.class);
+                return (Float) defaultTransformer.transform(arg, Float.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("double", FLOAT_REGEXPS, Double.class, new Transformer<Double>() {
             @Override
             public Double transform(String arg) {
-                return (Double) objectMapper.convert(arg, Double.class);
+                return (Double) defaultTransformer.transform(arg, Double.class);
             }
         }, true, true));
         defineParameterType(new ParameterType<>("word", WORD_REGEXPS, String.class, new Transformer<String>() {
             @Override
             public String transform(String arg) {
-                return (String) objectMapper.convert(arg, String.class);
+                return (String) defaultTransformer.transform(arg, String.class);
             }
         }, false, false));
         defineParameterType(new ParameterType<>("string", STRING_REGEXPS, String.class, new Transformer<String>() {
             @Override
             public String transform(String arg) {
-                return arg == null ? null : (String) objectMapper.convert(arg
+                return arg == null ? null : (String) defaultTransformer.transform(arg
                                 .replaceAll("\\\\\"", "\"")
                                 .replaceAll("\\\\'", "'"),
                         String.class);
@@ -105,7 +104,7 @@ public class ParameterTypeRegistry {
     public void defineParameterType(ParameterType<?> parameterType) {
         if (parameterType.getName() != null) {
             if (parameterTypeByName.containsKey(parameterType.getName())) {
-                if (parameterType.isAnonymous()) {
+                if (parameterType.getName().isEmpty()) {
                     throw new DuplicateTypeNameException("The anonymous parameter type has already been defined");
                 }
                 throw new DuplicateTypeNameException(String.format("There is already a parameter type with name %s", parameterType.getName()));
@@ -129,8 +128,8 @@ public class ParameterTypeRegistry {
         }
     }
 
-    public ObjectMapper getObjectMapper() {
-        return objectMapper;
+    public DefaultTransformer getDefaultTransformer() {
+        return defaultTransformer;
     }
 
     public <T> ParameterType<T> lookupByTypeName(String typeName) {

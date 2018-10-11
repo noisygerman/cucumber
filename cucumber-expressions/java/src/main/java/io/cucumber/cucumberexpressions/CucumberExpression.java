@@ -133,8 +133,8 @@ public class CucumberExpression implements Expression {
             ParameterType<?> parameterType = parameterTypes.get(i);
             Type type = i < typeHints.length ? typeHints[i] : String.class;
             if (parameterType.isAnonymous()) {
-                ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
-                ObjectMapperTransformer transformer = new ObjectMapperTransformer(objectMapper, type);
+                DefaultTransformer defaultTransformer = parameterTypeRegistry.getDefaultTransformer();
+                ObjectMapperTransformer transformer = new ObjectMapperTransformer(defaultTransformer, type);
                 parameterTypes.set(i, parameterType.deAnonymize(type, transformer));
             }
         }

@@ -8,17 +8,17 @@ import java.util.Locale;
 
 import static java.util.Objects.requireNonNull;
 
-final class SimpleObjectMapper implements ObjectMapper {
+final class SimpleDefaultTransformer implements DefaultTransformer {
 
     private final NumberParser numberParser;
 
-    SimpleObjectMapper(Locale locale) {
+    SimpleDefaultTransformer(Locale locale) {
         NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
         this.numberParser = new NumberParser(numberFormat);
     }
 
     @Override
-    public Object convert(String fromValue, Type toValueType) {
+    public Object transform(String fromValue, Type toValueType) {
         if (!(toValueType instanceof Class)) {
             throw createIllegalArgumentException(fromValue, toValueType);
         }
@@ -69,8 +69,8 @@ final class SimpleObjectMapper implements ObjectMapper {
 
     private IllegalArgumentException createIllegalArgumentException(String fromValue, Type toValueType) {
         return new IllegalArgumentException(
-                "Can't convert " + fromValue + " to " + toValueType + "\n" +
-                        "SimpleObjectMapper only supports a limited number of class types\n" +
+                "Can't transform " + fromValue + " to " + toValueType + "\n" +
+                        "SimpleDefaultTransformer only supports a limited number of class types\n" +
                         "Consider using a different object mapper or register a parameter type for " + toValueType
         );
     }
