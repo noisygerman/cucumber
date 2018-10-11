@@ -23,53 +23,66 @@ final class SimpleDefaultTransformer implements DefaultTransformer {
             throw createIllegalArgumentException(fromValue, toValueType);
         }
 
-        Class<?> toValueType1 = (Class<?>) requireNonNull(toValueType);
+        Class<?> toValueClass = (Class<?>) requireNonNull(toValueType);
         if (fromValue == null) {
             return null;
         }
 
-        if (String.class.equals(toValueType1) || Object.class.equals(toValueType1)) {
+        if (String.class.equals(toValueClass) || Object.class.equals(toValueClass)) {
             return fromValue;
         }
 
-        if (BigInteger.class.equals(toValueType1)) {
+        if (BigInteger.class.equals(toValueClass)) {
             return new BigInteger(fromValue);
         }
 
-        if (BigDecimal.class.equals(toValueType1)) {
+        if (BigDecimal.class.equals(toValueClass)) {
             return new BigDecimal(fromValue);
         }
 
-        if (Byte.class.equals(toValueType1) || byte.class.equals(toValueType1)) {
+        if (Byte.class.equals(toValueClass) || byte.class.equals(toValueClass)) {
             return Byte.decode(fromValue);
         }
 
-        if (Short.class.equals(toValueType1) || short.class.equals(toValueType1)) {
+        if (Short.class.equals(toValueClass) || short.class.equals(toValueClass)) {
             return Short.decode(fromValue);
         }
 
-        if (Integer.class.equals(toValueType1) || int.class.equals(toValueType1)) {
+        if (Integer.class.equals(toValueClass) || int.class.equals(toValueClass)) {
             return Integer.decode(fromValue);
         }
 
-        if (Long.class.equals(toValueType1) || long.class.equals(toValueType1)) {
+        if (Long.class.equals(toValueClass) || long.class.equals(toValueClass)) {
             return Long.decode(fromValue);
         }
 
-        if (Float.class.equals(toValueType1) || float.class.equals(toValueType1)) {
+        if (Float.class.equals(toValueClass) || float.class.equals(toValueClass)) {
             return numberParser.parseFloat(fromValue);
         }
 
-        if (Double.class.equals(toValueType1) || double.class.equals(toValueType1)) {
+        if (Double.class.equals(toValueClass) || double.class.equals(toValueClass)) {
             return numberParser.parseDouble(fromValue);
+        }
+
+        if (toValueClass.isEnum()) {
+            @SuppressWarnings("unchecked")
+            Class<? extends Enum<?>> enumClass = (Class<? extends Enum<?>>) toValueClass;
+            for (Enum<?> enumConstant : enumClass.getEnumConstants()) {
+                if (enumConstant.name().equals(fromValue)) {
+                    return enumConstant;
+                }
+            }
+            throw new CucumberExpressionException("Can't transform '" + fromValue + "' to " + toValueType +". " +
+                    "Not an enum constant");
         }
 
         throw createIllegalArgumentException(fromValue, toValueType);
     }
 
+
     private IllegalArgumentException createIllegalArgumentException(String fromValue, Type toValueType) {
         return new IllegalArgumentException(
-                "Can't transform " + fromValue + " to " + toValueType + "\n" +
+                "Can't transform '" + fromValue + "' to " + toValueType + "\n" +
                         "SimpleDefaultTransformer only supports a limited number of class types\n" +
                         "Consider using a different object mapper or register a parameter type for " + toValueType
         );

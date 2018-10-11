@@ -100,6 +100,12 @@ public class DefaultTransformerTest {
         assertEquals(4.2, defaultTransformer.transform("4.2", double.class));
     }
 
+    @Test
+    public void should_convert_to_enum() {
+        assertEquals(TestEnum.TEST, defaultTransformer.transform("TEST", TestEnum.class));
+    }
+
+
     private static class TestJacksonDefaultTransformer implements DefaultTransformer {
         com.fasterxml.jackson.databind.ObjectMapper delegate =
                 new com.fasterxml.jackson.databind.ObjectMapper();
@@ -111,4 +117,8 @@ public class DefaultTransformerTest {
         }
 
     }
+    private enum TestEnum {
+        TEST
+    }
+
 }
