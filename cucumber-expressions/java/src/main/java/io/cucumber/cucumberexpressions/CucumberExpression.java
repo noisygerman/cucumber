@@ -131,7 +131,7 @@ public class CucumberExpression implements Expression {
         List<ParameterType<?>> parameterTypes = new ArrayList<>(this.parameterTypes);
         for (int i = 0; i < parameterTypes.size(); i++) {
             ParameterType<?> parameterType = parameterTypes.get(i);
-            Type type = i < typeHints.length ? typeHints[i] : Object.class;
+            Type type = i < typeHints.length ? typeHints[i] : String.class;
             if (parameterType.isAnonymous()) {
                 ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
                 ObjectMapperTransformer transformer = new ObjectMapperTransformer(objectMapper, type);

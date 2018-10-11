@@ -33,7 +33,7 @@ public class RegularExpression implements Expression {
         int typeHintIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {
             final String parameterTypeRegexp = groupBuilder.getSource();
-            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : Object.class;
+            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : String.class;
 
             ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
 
