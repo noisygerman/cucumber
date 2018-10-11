@@ -27,6 +27,15 @@ public final class ParameterType<T> implements Comparable<ParameterType<?>> {
         }
     }
 
+    static ParameterType<Object> createAnonymousParameterType(String regexp) {
+        return new ParameterType<>("", singletonList(regexp), Object.class, new Transformer<Object>() {
+
+            public Object transform(String arg) {
+                throw new UnsupportedOperationException("Anonymous transform must be deanonymized before use");
+            }
+        }, false, false);
+    }
+
     public static <E extends Enum> ParameterType<E> fromEnum(final Class<E> enumClass) {
         Enum[] enumConstants = enumClass.getEnumConstants();
         StringBuilder regexpBuilder = new StringBuilder();
@@ -45,15 +54,6 @@ public final class ParameterType<T> implements Comparable<ParameterType<?>> {
                     }
                 }
         );
-    }
-
-    static ParameterType<Object> anonymous(String regexp) {
-        return new ParameterType<>("", singletonList(regexp), Object.class, new CaptureGroupTransformer<Object>() {
-            @Override
-            public Object transform(String[] args) throws Throwable {
-                throw new UnsupportedOperationException("Anonymous transform must be deanonymized before use");
-            }
-        }, false, false);
     }
 
     public ParameterType(String name, List<String> regexps, Type type, CaptureGroupTransformer<T> transformer, boolean useForSnippets, boolean preferForRegexpMatch) {
@@ -157,7 +157,7 @@ public final class ParameterType<T> implements Comparable<ParameterType<?>> {
         return name != null && name.isEmpty();
     }
 
-    ParameterType<Object> deAnonymize(Transformer<Object> transformer) {
+    ParameterType<Object> deAnonymize(Type type, Transformer<Object> transformer) {
         return new ParameterType<>("anonymous", regexps, type, transformer, useForSnippets, preferForRegexpMatch);
     }
 

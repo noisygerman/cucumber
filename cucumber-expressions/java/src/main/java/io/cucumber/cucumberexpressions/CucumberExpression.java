@@ -135,7 +135,7 @@ public class CucumberExpression implements Expression {
             if (parameterType.isAnonymous()) {
                 ObjectMapper objectMapper = parameterTypeRegistry.getObjectMapper();
                 ObjectMapperTransformer transformer = new ObjectMapperTransformer(objectMapper, type);
-                parameterTypes.set(i, parameterType.deAnonymize(transformer));
+                parameterTypes.set(i, parameterType.deAnonymize(type, transformer));
             }
         }
 

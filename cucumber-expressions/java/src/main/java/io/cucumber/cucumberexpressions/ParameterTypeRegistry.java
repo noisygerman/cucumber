@@ -12,6 +12,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import static io.cucumber.cucumberexpressions.ParameterType.createAnonymousParameterType;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
@@ -99,13 +100,13 @@ public class ParameterTypeRegistry {
             }
         }, true, false));
 
-        defineParameterType(ParameterType.anonymous(ANONYMOUS_REGEX));
+        defineParameterType(createAnonymousParameterType(ANONYMOUS_REGEX));
     }
 
     public void defineParameterType(ParameterType<?> parameterType) {
         if (parameterType.getName() != null) {
             if (parameterTypeByName.containsKey(parameterType.getName())) {
-                if(parameterType.getName().isEmpty()){
+                if(parameterType.isAnonymous()){
                     throw new DuplicateTypeNameException("The anonymous parameter type has already been defined");
                 }
                 throw new DuplicateTypeNameException(String.format("There is already a parameter type with name %s", parameterType.getName()));
@@ -172,4 +173,5 @@ public class ParameterTypeRegistry {
     public Collection<ParameterType<?>> getParameterTypes() {
         return parameterTypeByName.values();
     }
+
 }

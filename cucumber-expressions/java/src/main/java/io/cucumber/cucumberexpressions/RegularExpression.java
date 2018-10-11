@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static io.cucumber.cucumberexpressions.ParameterType.anonymous;
+import static io.cucumber.cucumberexpressions.ParameterType.createAnonymousParameterType;
 
 public class RegularExpression implements Expression {
     private final Pattern expressionRegexp;
@@ -37,32 +37,29 @@ public class RegularExpression implements Expression {
 
             ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
 
-            if (parameterType != null && !parameterType.isAnonymous()) {
-                // Use hint for validation only
-
-                // TODO: Handle types that are not classes - needs tests
-                Class<?> paramClass = (Class) parameterType.getType();
-                Class<?> hintClass = (Class) typeHint;
-                if (!hintClass.isAssignableFrom(paramClass)) {
-                    throw new CucumberExpressionException(String.format(
-                            // TODO: Tell users what to do if they attempt to convert \d+ into Float.
-                            "Capture group with %s transforms to %s, which is incompatible with %s. " +
-                                    "Try changing the capture group to something that doesn't match an existing parameter type.",
-                            parameterTypeRegexp,
-                            paramClass.getTypeName(),
-                            hintClass.getTypeName())
-                    );
-                }
-            }
-
             if (parameterType == null) {
-                parameterType = anonymous(parameterTypeRegexp);
+                parameterType = createAnonymousParameterType(parameterTypeRegexp);
             }
 
-            // Either from the one created above or found by lookupByRegexp
+            // Either from createAnonymousParameterType or lookupByRegexp
             if (parameterType.isAnonymous()) {
                 Transformer<Object> transformer = new ObjectMapperTransformer(objectMapper, typeHint);
-                parameterType = parameterType.deAnonymize(transformer);
+                parameterType = parameterType.deAnonymize(typeHint, transformer);
+            }
+
+            // Use hint for validation only
+            // TODO: Handle types that are not classes - needs tests
+            Class<?> paramClass = (Class) parameterType.getType();
+            Class<?> hintClass = (Class) typeHint;
+            if (!hintClass.isAssignableFrom(paramClass)) {
+                throw new CucumberExpressionException(String.format(
+                        // TODO: Tell users what to do if they attempt to convert \d+ into Float.
+                        "Capture group with %s transforms to %s, which is incompatible with %s. " +
+                                "Try changing the capture group to something that doesn't match an existing parameter type.",
+                        parameterTypeRegexp,
+                        paramClass.getTypeName(),
+                        hintClass.getTypeName())
+                );
             }
 
             parameterTypes.add(parameterType);
@@ -81,4 +78,5 @@ public class RegularExpression implements Expression {
     public String getSource() {
         return expressionRegexp.pattern();
     }
+
 }
