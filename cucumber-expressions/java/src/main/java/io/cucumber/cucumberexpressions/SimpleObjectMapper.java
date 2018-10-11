@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.NumberFormat;
 import java.util.Locale;
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -20,61 +19,60 @@ final class SimpleObjectMapper implements ObjectMapper {
 
     @Override
     public Object convert(String fromValue, Type toValueType) {
-        if (toValueType instanceof Class) {
-            return convert(fromValue, (Class<?>) requireNonNull(toValueType));
+        if (!(toValueType instanceof Class)) {
+            throw createIllegalArgumentException(fromValue, toValueType);
         }
 
-        // TODO:
-        throw new IllegalArgumentException();
-    }
-
-    @SuppressWarnings("unchecked")
-    private Object convert(String fromValue, Class<?> toValueType) {
+        Class<?> toValueType1 = (Class<?>) requireNonNull(toValueType);
         if (fromValue == null) {
             return null;
         }
 
-        if (String.class.equals(toValueType) || Object.class.equals(toValueType)) {
+        if (String.class.equals(toValueType1) || Object.class.equals(toValueType1)) {
             return fromValue;
         }
 
-        if (BigInteger.class.equals(toValueType)) {
+        if (BigInteger.class.equals(toValueType1)) {
             return new BigInteger(fromValue);
         }
 
-        if (BigDecimal.class.equals(toValueType)) {
+        if (BigDecimal.class.equals(toValueType1)) {
             return new BigDecimal(fromValue);
         }
 
-        if (Byte.class.equals(toValueType) || byte.class.equals(toValueType)) {
+        if (Byte.class.equals(toValueType1) || byte.class.equals(toValueType1)) {
             return Byte.decode(fromValue);
         }
 
-        if (Short.class.equals(toValueType) || short.class.equals(toValueType)) {
+        if (Short.class.equals(toValueType1) || short.class.equals(toValueType1)) {
             return Short.decode(fromValue);
         }
 
-        if (Integer.class.equals(toValueType) || int.class.equals(toValueType)) {
+        if (Integer.class.equals(toValueType1) || int.class.equals(toValueType1)) {
             return Integer.decode(fromValue);
         }
 
-        if (Long.class.equals(toValueType) || long.class.equals(toValueType)) {
+        if (Long.class.equals(toValueType1) || long.class.equals(toValueType1)) {
             return Long.decode(fromValue);
         }
 
-        if (Float.class.equals(toValueType) || float.class.equals(toValueType)) {
+        if (Float.class.equals(toValueType1) || float.class.equals(toValueType1)) {
             return numberParser.parseFloat(fromValue);
         }
 
-        if (Double.class.equals(toValueType) || double.class.equals(toValueType)) {
+        if (Double.class.equals(toValueType1) || double.class.equals(toValueType1)) {
             return numberParser.parseDouble(fromValue);
         }
 
-        //TODO: This can happen with either the anonymous parameter type or with regular expressions
-        // Resolution either:
-        // 1. Register a parameter type for type.
-        // 2. Register a different default object mapper.
-        throw new IllegalArgumentException("Unsupported type " + toValueType);
+        throw createIllegalArgumentException(fromValue, toValueType);
+    }
+
+    private IllegalArgumentException createIllegalArgumentException(String fromValue, Type toValueType) {
+        return new IllegalArgumentException(
+                "Can't convert " + fromValue + " to " + toValueType + "\n" +
+                        "SimpleObjectMapper only supports a limited number of class types\n" +
+                        "Consider using a different object mapper or register a parameter type for " + toValueType
+        );
     }
 
 }

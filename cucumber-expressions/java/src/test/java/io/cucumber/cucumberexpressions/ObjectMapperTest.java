@@ -100,7 +100,6 @@ public class ObjectMapperTest {
         assertEquals(4.2, objectMapper.convert("4.2", double.class));
     }
 
-
     private static class TestJacksonObjectMapper implements ObjectMapper {
         com.fasterxml.jackson.databind.ObjectMapper delegate =
                 new com.fasterxml.jackson.databind.ObjectMapper();
