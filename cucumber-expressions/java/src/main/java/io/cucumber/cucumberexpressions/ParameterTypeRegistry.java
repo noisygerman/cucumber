@@ -25,7 +25,6 @@ public class ParameterTypeRegistry {
     private static final List<String> STRING_REGEXPS = singletonList(Pattern.compile("\"([^\"\\\\]*(\\\\.[^\"\\\\]*)*)\"|'([^'\\\\]*(\\\\.[^'\\\\]*)*)'").pattern());
     private static final String ANONYMOUS_REGEX = Pattern.compile(".*").pattern();
     private final Map<String, ParameterType<?>> parameterTypeByName = new HashMap<>();
-    private final Map<Type, SortedSet<ParameterType<?>>> parameterTypesByType = new HashMap<>();
     private final Map<String, SortedSet<ParameterType<?>>> parameterTypesByRegexp = new HashMap<>();
     private final ObjectMapper objectMapper;
 
@@ -33,7 +32,7 @@ public class ParameterTypeRegistry {
         this(new SimpleObjectMapper(locale));
     }
 
-    public ParameterTypeRegistry(ObjectMapper objectMapper) {
+    public ParameterTypeRegistry(final ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
 
         defineParameterType(new ParameterType<>("biginteger", INTEGER_REGEXPS, BigInteger.class, new Transformer<BigInteger>() {
@@ -106,7 +105,7 @@ public class ParameterTypeRegistry {
     public void defineParameterType(ParameterType<?> parameterType) {
         if (parameterType.getName() != null) {
             if (parameterTypeByName.containsKey(parameterType.getName())) {
-                if(parameterType.isAnonymous()){
+                if (parameterType.isAnonymous()) {
                     throw new DuplicateTypeNameException("The anonymous parameter type has already been defined");
                 }
                 throw new DuplicateTypeNameException(String.format("There is already a parameter type with name %s", parameterType.getName()));
@@ -115,7 +114,9 @@ public class ParameterTypeRegistry {
         }
 
         for (String parameterTypeRegexp : parameterType.getRegexps()) {
-            parameterTypesByRegexp.computeIfAbsent(parameterTypeRegexp, k -> new TreeSet<>());
+            if (!parameterTypesByRegexp.containsKey(parameterTypeRegexp)) {
+                parameterTypesByRegexp.put(parameterTypeRegexp, new TreeSet<ParameterType<?>>());
+            }
             SortedSet<ParameterType<?>> parameterTypes = parameterTypesByRegexp.get(parameterTypeRegexp);
             if (!parameterTypes.isEmpty() && parameterTypes.first().preferForRegexpMatch() && parameterType.preferForRegexpMatch()) {
                 throw new CucumberExpressionException(String.format(
@@ -126,18 +127,6 @@ public class ParameterTypeRegistry {
             }
             parameterTypes.add(parameterType);
         }
-
-        parameterTypesByType.computeIfAbsent(parameterType.getType(), k -> new TreeSet<>());
-        SortedSet<ParameterType<?>> parameterTypes = parameterTypesByType.get(parameterType.getType());
-        if (!parameterTypes.isEmpty() && parameterTypes.first().preferForRegexpMatch() && parameterType.preferForRegexpMatch()) {
-            throw new CucumberExpressionException(String.format(
-                    "There can only be one preferential parameter type per type. " +
-                            "The type %s is used for two preferential parameter types, {%s} and {%s}",
-                    parameterType.getType().getTypeName(), parameterTypes.first().getType().getTypeName(), parameterType.getType().getTypeName()
-            ));
-        }
-        parameterTypes.add(parameterType);
-
     }
 
     public ObjectMapper getObjectMapper() {
@@ -146,15 +135,6 @@ public class ParameterTypeRegistry {
 
     public <T> ParameterType<T> lookupByTypeName(String typeName) {
         return (ParameterType<T>) parameterTypeByName.get(typeName);
-    }
-
-    public <T> ParameterType<T> lookupByType(Type type, String text) {
-        SortedSet<ParameterType<?>> parameterTypes = parameterTypesByType.get(type);
-        if (parameterTypes == null) return null;
-        if (parameterTypes.size() > 1 && !parameterTypes.first().preferForRegexpMatch()) {
-            throw new CucumberExpressionException(String.format("Multiple parameter types match type %s", type.getTypeName()));
-        }
-        return (ParameterType<T>) parameterTypes.first();
     }
 
     public <T> ParameterType<T> lookupByRegexp(String parameterTypeRegexp, Pattern expressionRegexp, String text) {

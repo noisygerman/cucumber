@@ -121,7 +121,12 @@ public class RegularExpressionTest {
                 "test",
                 "[\"a-z ]+",
                 String.class,
-                (Transformer<String>) String::toUpperCase
+                new Transformer<String>() {
+                    @Override
+                    public String transform(String s) {
+                        return s.toUpperCase();
+                    }
+                }
         ));
         List<?> match = match(compile("a quote ([\"a-z ]+)"), "a quote \" and quote \"", String.class);
         assertEquals(asList("\" AND QUOTE \""), match);

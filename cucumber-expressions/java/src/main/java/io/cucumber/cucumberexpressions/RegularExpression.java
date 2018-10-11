@@ -33,7 +33,7 @@ public class RegularExpression implements Expression {
         int typeHintIndex = 0;
         for (GroupBuilder groupBuilder : treeRegexp.getGroupBuilder().getChildren()) {
             final String parameterTypeRegexp = groupBuilder.getSource();
-            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : String.class;
+            final Type typeHint = typeHintIndex < typeHints.length ? typeHints[typeHintIndex++] : Object.class;
 
             ParameterType<?> parameterType = parameterTypeRegistry.lookupByRegexp(parameterTypeRegexp, expressionRegexp, text);
 
@@ -43,8 +43,9 @@ public class RegularExpression implements Expression {
 
             // Either from createAnonymousParameterType or lookupByRegexp
             if (parameterType.isAnonymous()) {
-                Transformer<Object> transformer = new ObjectMapperTransformer(objectMapper, typeHint);
-                parameterType = parameterType.deAnonymize(typeHint, transformer);
+                Type type = Object.class.equals(typeHint) ? String.class : typeHint;
+                Transformer<Object> transformer = new ObjectMapperTransformer(objectMapper, type);
+                parameterType = parameterType.deAnonymize(type, transformer);
             }
 
             // Use hint for validation only
@@ -57,8 +58,8 @@ public class RegularExpression implements Expression {
                         "Capture group with %s transforms to %s, which is incompatible with %s. " +
                                 "Try changing the capture group to something that doesn't match an existing parameter type.",
                         parameterTypeRegexp,
-                        paramClass.getTypeName(),
-                        hintClass.getTypeName())
+                        paramClass.getName(),
+                        hintClass.getName())
                 );
             }
 
